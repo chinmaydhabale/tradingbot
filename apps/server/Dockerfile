@@ -21,4 +21,4 @@ COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 ENV NODE_ENV=production
 EXPOSE 4000
-CMD ["node", "apps/server/dist/main"]
+CMD ["sh", "-c", "npx prisma db push --schema=./apps/server/prisma/schema.prisma --accept-data-loss && node apps/server/dist/main"]

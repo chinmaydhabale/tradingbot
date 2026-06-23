@@ -210,7 +210,7 @@ export default function Dashboard() {
       setErrorMsg(null);
     } catch (err: any) {
       console.error('Error fetching dashboard data:', err);
-      setErrorMsg('Cannot connect to NestJS API. Make sure backend server is running on http://localhost:4000.');
+      setErrorMsg(`Cannot connect to NestJS API at ${API_BASE}. Make sure the backend server is running and accessible.`);
     } finally {
       setIsLoading(false);
     }
