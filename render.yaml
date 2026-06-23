@@ -1,0 +1,24 @@
+services:
+  # 1. NestJS Backend Container Service
+  - type: web
+    name: tradingbot-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: apps/server/Dockerfile
+    dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        sync: false # User will provide their Neon/Supabase PostgreSQL connection string
+      - key: PORT
+        value: 4000
+
+  # 2. Next.js Frontend Web Service
+  - type: web
+    name: tradingbot-frontend
+    runtime: node
+    plan: free
+    buildCommand: npm run build --workspace=apps/web
+    startCommand: npm run start --workspace=apps/web
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        value: https://tradingbot-backend.onrender.com # Replace with your actual Koyeb/Render backend URL once deployed
