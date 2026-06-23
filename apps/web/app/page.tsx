@@ -19,9 +19,11 @@ import {
   ExternalLink
 } from 'lucide-react';
 
-const API_BASE = typeof window !== 'undefined'
-  ? `http://${window.location.hostname}:4000/api`
-  : 'http://localhost:4000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : typeof window !== 'undefined'
+    ? `http://${window.location.hostname}:4000/api`
+    : 'http://localhost:4000/api';
 
 
 interface ConfidenceScore {
@@ -137,7 +139,7 @@ export default function Dashboard() {
       .then(m => {
         const io = m.io || m.default;
 
-        const backendUrl = `http://${window.location.hostname}:4000`;
+        const backendUrl = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:4000`;
         const socket = io(backendUrl);
         
         socket.on('ticker', (data: { symbol: string; price: number }) => {
