@@ -134,10 +134,9 @@ export default function Dashboard() {
 
   useEffect(() => {
     setIsMounted(true);
-    // Dynamic import to prevent SSR compilation errors in Next.js
-    const socketPromise = (Function('return import("socket.io-client")')() as Promise<any>)
+    const socketPromise = import('socket.io-client')
       .then(m => {
-        const io = m.io || m.default;
+        const io = m.io || (m as any).default || m;
 
         const backendUrl = process.env.NEXT_PUBLIC_API_URL || `http://${window.location.hostname}:4000`;
         const socket = io(backendUrl);
