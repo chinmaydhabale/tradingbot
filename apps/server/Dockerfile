@@ -1,5 +1,6 @@
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 WORKDIR /app
+RUN apt-get update && apt-get install -y openssl
 COPY package.json ./
 COPY apps/server/package.json ./apps/server/
 RUN npm install --workspace=apps/server
@@ -8,8 +9,9 @@ COPY apps/server ./apps/server/
 RUN npx prisma generate --schema=./apps/server/prisma/schema.prisma
 RUN npm run build --workspace=apps/server
 
-FROM node:20-alpine AS runner
+FROM node:20-slim AS runner
 WORKDIR /app
+RUN apt-get update && apt-get install -y openssl
 COPY package.json ./
 COPY apps/server/package.json ./apps/server/
 RUN npm install --omit=dev --workspace=apps/server
