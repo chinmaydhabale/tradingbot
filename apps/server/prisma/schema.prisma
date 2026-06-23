@@ -1,0 +1,136 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// 1. Strategies Table
+model Strategy {
+  id               String               @id @default(uuid())
+  name             String               @unique
+  description      String?
+  config           String                 // Strategy-specific hyperparameters (JSON string)
+  isActive         Boolean              @default(false)
+  mode             String               @default("PAPER_ONLY") // AUTO_TRADE, PAPER_ONLY, NO_TRADE
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  
+  // Relations
+  trades           Trade[]
+  edgeScores       EdgeScore[]
+  confidenceScores ConfidenceScore[]
+  auditDecisions   AuditDecision[]
+}
+
+// 2. Historical OHLCV Candles (Ingestion Engine)
+model Ohlcv {
+  id        String   @id @default(uuid())
+  symbol    String   // e.g. BTC/USDT
+  exchange  String   // e.g. binance, bybit
+  interval  String   // e.g. 1m, 5m, 1h, 1d
+  time      DateTime
+  open      Float
+  high      Float
+  low       Float
+  close     Float
+  volume    Float
+
+  @@unique([symbol, exchange, interval, time])
+  @@index([symbol, time(sort: Desc)])
+}
+
+// 3. Simulated & Live Trades Table
+model Trade {
+  id             String    @id @default(uuid())
+  strategyId     String
+  strategy       Strategy  @relation(fields: [strategyId], references: [id])
+  symbol         String    // e.g. BTC/USDT
+  side           String    // BUY, SELL
+  type           String    // PAPER, LIVE
+  status         String    // OPEN, CLOSED, CANCELLED
+  entryPrice     Float
+  exitPrice      Float?
+  quantity       Float
+  pnl            Float?    // Net profit/loss in USDT
+  entryTime      DateTime  @default(now())
+  exitTime       DateTime?
+  correlationId  String    // Links trade to decision logs
+
+  @@index([strategyId, entryTime(sort: Desc)])
+  @@index([correlationId])
+}
+
+// 4. Time-series Edge Scores (Module 17: Decay Engine)
+model EdgeScore {
+  id                String   @id @default(uuid())
+  strategyId        String
+  strategy          Strategy @relation(fields: [strategyId], references: [id])
+  time              DateTime @default(now())
+  edgeScore24h      Float
+  edgeScore3d       Float
+  edgeScore7d       Float
+  edgeScore30d      Float
+  edgeScore90d      Float
+  decayVelocity     Float
+  decayAcceleration Float
+  trendDirection    String   // IMPROVING, STABLE, DECAYING, CRITICAL
+
+  @@index([strategyId, time(sort: Desc)])
+}
+
+// 5. Time-series Confidence Ratings (Module 18: Confidence Engine)
+model ConfidenceScore {
+  id              String   @id @default(uuid())
+  strategyId      String
+  strategy        Strategy @relation(fields: [strategyId], references: [id])
+  time            DateTime @default(now())
+  confidenceScore Float
+  operationalMode String   // AUTO_TRADE, PAPER_ONLY, NO_TRADE
+  c1Wfa           Float
+  c2Edge          Float
+  c3Regime        Float
+  c4WinRate       Float
+  c5RiskAdj       Float
+  c6MonteCarlo    Float
+  c7SampleSize    Float
+
+  @@index([strategyId, time(sort: Desc)])
+}
+
+// 6. Regime Transitions Logs (Module 19: Regime Matrix)
+model RegimeTransition {
+  id             String   @id @default(uuid())
+  time           DateTime @default(now())
+  symbol         String   // e.g. BTC/USDT
+  previousRegime String
+  currentRegime  String   // BULL_TREND, BEAR_TREND, HIGH_VOL, LOW_VOL
+  reason         String?
+}
+
+// 7. Audit Decision Provenance Chain (Module 27: Audit Layer)
+model AuditDecision {
+  id            String   @id @default(uuid())
+  time          DateTime @default(now())
+  strategyId    String?
+  strategy      Strategy? @relation(fields: [strategyId], references: [id])
+  module        String   // e.g. WFA_ENGINE, MAB_ALLOCATOR
+  action        String   // e.g. ACTIVATE, DEMOTE, EXECUTE_ORDER
+  correlationId String   // Group events by decision root
+  causationId   String?  // Event ID that triggered this decision
+  data          String     // Detailed inputs, formulas, outputs (JSON string)
+  provenance    String   // Stringified chain verification hash
+
+  @@index([correlationId])
+  @@index([time(sort: Desc)])
+}
+
+model ShadowPortfolioSnapshot {
+  id                String   @id @default(uuid())
+  time              DateTime @default(now())
+  mabEquity         Float
+  equalWeightEquity Float
+  singleBestEquity  Float
+}

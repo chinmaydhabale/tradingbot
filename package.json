@@ -1,0 +1,20 @@
+{
+  "name": "tradingguru-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/server",
+    "apps/web"
+  ],
+  "scripts": {
+    "dev:server": "npm run dev --workspace=apps/server",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build:server": "npm run build --workspace=apps/server",
+    "build:web": "npm run build --workspace=apps/web",
+    "start:server": "npm run start --workspace=apps/server",
+    "start:web": "npm run start --workspace=apps/web"
+  },
+  "overrides": {
+    "@noble/curves": "1.4.0"
+  }
+}
